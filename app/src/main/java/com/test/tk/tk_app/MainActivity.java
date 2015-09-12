@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -132,17 +133,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                         /***************************************
                          서버 msg 읽기
                          ****************************************/
-                        BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(),"UTF-8"));
-                        StringBuilder builder = new StringBuilder();
-                        String str;
-
-                        while((str = in.readLine())!=null)
-                        {
-                            builder.append(str);
-                        }
-
-                        in.close(); //BufferedReader �ݱ�
-                        serverMsg = builder.toString();
+                        serverMsg = ReadServerResult(urlConnection);
                         Log.d("tk_test", "from server = " + serverMsg);
                     }
                     else
@@ -215,6 +206,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
                         /***************************************
                          서버 msg 읽기
                          ****************************************/
+
+                        serverMsg = ReadServerResult(urlConnection);
+                        Log.d("tk_test","End from server ="+serverMsg);
+                        /*
                         BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(),"UTF-8"));
                         StringBuilder builder = new StringBuilder();
                         String str;
@@ -227,6 +222,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                         in.close();
                         serverMsg = builder.toString();
                         Log.d("tk_test","from server ="+serverMsg);
+                        */
                     }
                     else
                     {
@@ -248,6 +244,29 @@ public class MainActivity extends Activity implements View.OnClickListener {
             super.onPostExecute(aVoid);
             dialog.dismiss();
         }
+    }
+
+    /***************************************
+     함수명: ReadServerResult
+     기능: 서버로부터의 결과값 Read
+     ****************************************/
+    private String ReadServerResult(HttpURLConnection urlConnection) throws IOException {
+        String result="";
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(),"UTF-8"));
+        StringBuilder builder = new StringBuilder();
+        String str;
+
+        while((str=in.readLine())!=null)
+        {
+            builder.append(str);
+        }
+
+        in.close();
+        result = builder.toString();
+        Log.d("tk_test","from server ="+result);
+
+        return result;
     }
 
     /***************************************
