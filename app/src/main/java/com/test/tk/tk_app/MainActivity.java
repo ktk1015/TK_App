@@ -8,7 +8,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,14 +22,19 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 
 
 public class MainActivity extends Activity implements View.OnClickListener {
 
     private Button saveBtn, getMeminfoBtn,delMemdataBtn;
+    private EditText memIdEtxt, memAgeEtxt;
+    private TextView temp_result_txt;
     Context context;
     private final String urlPath = "http://ktk1015.dothome.co.kr/s2";
     private final String TAG = "tk_test";
+
+    ArrayList<ItemEntry> itemList = new ArrayList<ItemEntry>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +48,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
         saveBtn.setOnClickListener(this);
         getMeminfoBtn.setOnClickListener(this);
         delMemdataBtn.setOnClickListener(this);
+
+        memIdEtxt = (EditText)findViewById(R.id.memID_editText);
+        memAgeEtxt = (EditText)findViewById(R.id.age_editText);
+
+        temp_result_txt = (TextView)findViewById(R.id.result_temp_textView);
     }
 
     @Override
@@ -44,12 +60,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
         switch (v.getId()){
             case R.id.save_btn:
                 Log.d("tk_test", "save btn!!");
-                Toast.makeText(getApplicationContext(), "save btn!!!", Toast.LENGTH_SHORT).show();
-                HttpConnection thread = new HttpConnection();
-                thread.execute();
+                Toast.makeText(getApplicationContext(), GetInputMemID(), Toast.LENGTH_SHORT).show();
+//                HttpConnection thread = new HttpConnection();
+//                thread.execute();
                 break;
             case R.id.getMemberInfo_btn:
                 Toast.makeText(getApplicationContext(), "get meminfo btn!!!", Toast.LENGTH_SHORT).show();
+                new GetAllMemInfoTask().execute();
                 break;
             case R.id.delMemData_btn:
                 Toast.makeText(getApplicationContext(),"del Memdata btn!!!",Toast.LENGTH_SHORT).show();
@@ -59,6 +76,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 break;
         }
     }//onClick()
+
+    private String GetInputMemID()
+    {
+        String result;
+        result = memIdEtxt.getText().toString();
+
+        if(result.equals(""))
+            return "lllllll";
+
+        return result;
+    }
 
     private class HttpConnection extends AsyncTask<String, Void, String>
     {
@@ -206,23 +234,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
                         /***************************************
                          서버 msg 읽기
                          ****************************************/
-
                         serverMsg = ReadServerResult(urlConnection);
                         Log.d("tk_test","End from server ="+serverMsg);
-                        /*
-                        BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(),"UTF-8"));
-                        StringBuilder builder = new StringBuilder();
-                        String str;
-
-                        while((str=in.readLine())!=null)
-                        {
-                            builder.append(str);
-                        }
-
-                        in.close();
-                        serverMsg = builder.toString();
-                        Log.d("tk_test","from server ="+serverMsg);
-                        */
                     }
                     else
                     {
@@ -243,6 +256,74 @@ public class MainActivity extends Activity implements View.OnClickListener {
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             dialog.dismiss();
+        }
+    }
+
+    private class GetAllMemInfoTask extends AsyncTask<Void, Void, String>
+    {
+        ProgressDialog dialog;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog = new ProgressDialog(context);
+            dialog.show();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            URL url;
+            String serverMsg=null;
+
+            try {
+                url=new URL("http://ktk1015.dothome.co.kr/s2/getAllMemInfo.php");  //URL클래스의 인스턴스 생성
+
+                HttpURLConnection urlConnection=(HttpURLConnection)url.openConnection();
+
+                if(urlConnection !=null)
+                {
+                    /***************************************
+                     전송모드 설정
+                     ****************************************/
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setConnectTimeout(3000);
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
+                    urlConnection.setUseCaches(true);
+                    urlConnection.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
+
+                    //response
+                    if(urlConnection.getResponseCode()==HttpURLConnection.HTTP_OK)
+                    {
+                        /***************************************
+                         서버 msg 읽기
+                         ****************************************/
+                        serverMsg = ReadServerResult(urlConnection);
+                        Log.d("tk_test", "333333333 from server =" + serverMsg);
+                        ServerResultJsonParsing(serverMsg);
+                        ItemEntry etemp = itemList.get(0);
+                        Log.d("tk_test", "111= " + etemp.getMemId() + "222= "+etemp.getMemAge());
+                    }
+                    else
+                    {
+                        Log.d(TAG,"connection is fail");
+                    }
+
+                }
+
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+            return serverMsg;
+        }//doInBackground
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            dialog.dismiss();
+            temp_result_txt.setText(result);
         }
     }
 
@@ -300,4 +381,37 @@ public class MainActivity extends Activity implements View.OnClickListener {
             e.printStackTrace();
         }
     }//SendMsgDefault()
+
+
+    /******************************************************************************
+     함수명: ServerResultJsonParsing
+     기능: JsonObject 포멧으로 된 서버결과 값을 파싱
+     서버결과값 포멧: {"myJson":[{이름:값, 이름:값}, {이름:값, 이름:값}, {이름:값, 이름:값} ...}]}
+     *******************************************************************************/
+    private void ServerResultJsonParsing(String serverData){
+        String result_memid="";
+        int result_age=0;
+
+        try {
+            JSONObject root = new JSONObject(serverData);   // 서버결과값은 JsonObject 형식으로 되어있다.
+            JSONArray jarr = root.getJSONArray("myJson");  // myJson이란 이름으로 매칭된 JsonArray 값 파싱
+            for(int i=0;i<jarr.length();i++)
+            {
+                //각각 개체를 하나씩 추출
+                JSONObject jobj = jarr.getJSONObject(i);
+
+                //객체에서 데이터 추출
+                result_memid = jobj.getString("memid");
+                result_age = jobj.getInt("age");
+                Log.d("tk_test","memid= "+result_memid+ "  mAge= "+result_age);
+
+                //ArrayList에 추가
+                ItemEntry e1 = new ItemEntry(result_memid, result_age);
+                itemList.add(e1);
+            }
+        }catch (JSONException e){
+            e.printStackTrace();
+        }
+
+    }
 }

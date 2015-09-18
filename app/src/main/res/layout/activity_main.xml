@@ -42,6 +42,12 @@
         android:id="@+id/delMemData_btn"
         android:text="회원정보 삭제" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/result_temp_textView"
+        android:text="Result!"/>
+
 
 
 
