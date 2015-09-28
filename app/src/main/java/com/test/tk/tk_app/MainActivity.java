@@ -27,9 +27,11 @@ import java.util.ArrayList;
 
 public class MainActivity extends Activity implements View.OnClickListener {
 
-    private Button saveBtn, getMeminfoBtn,delMemdataBtn;
-    private EditText memIdEtxt, memAgeEtxt;
+    private Button saveBtn, getMeminfoBtn,delMemdataBtn,getMemDataBtn, editMemDataBtn;
+    private EditText memIdEtxt, memAgeEtxt, editMemId, editNewMemId, editNewMemAge;
     private TextView temp_result_txt;
+    private String MemId="";
+    private int MemAge=-1;
     Context context;
     private final String urlPath = "http://ktk1015.dothome.co.kr/s2";
     private final String TAG = "tk_test";
@@ -45,12 +47,19 @@ public class MainActivity extends Activity implements View.OnClickListener {
         saveBtn = (Button)findViewById(R.id.save_btn);
         getMeminfoBtn = (Button)findViewById(R.id.getMemberInfo_btn);
         delMemdataBtn = (Button)findViewById(R.id.delMemData_btn);
+        getMemDataBtn = (Button)findViewById(R.id.getMemData_btn);
+        editMemDataBtn= (Button)findViewById(R.id.editMemdata_btn);
         saveBtn.setOnClickListener(this);
         getMeminfoBtn.setOnClickListener(this);
         delMemdataBtn.setOnClickListener(this);
+        getMemDataBtn.setOnClickListener(this);
+        editMemDataBtn.setOnClickListener(this);
 
         memIdEtxt = (EditText)findViewById(R.id.memID_editText);
         memAgeEtxt = (EditText)findViewById(R.id.age_editText);
+        editMemId = (EditText)findViewById(R.id.editMemid_editText);
+        editNewMemId = (EditText)findViewById(R.id.editNewId_editText);
+        editNewMemAge = (EditText)findViewById(R.id.editNewAge_editText);
 
         temp_result_txt = (TextView)findViewById(R.id.result_temp_textView);
     }
@@ -60,32 +69,108 @@ public class MainActivity extends Activity implements View.OnClickListener {
         switch (v.getId()){
             case R.id.save_btn:
                 Log.d("tk_test", "save btn!!");
-                Toast.makeText(getApplicationContext(), GetInputMemID(), Toast.LENGTH_SHORT).show();
-//                HttpConnection thread = new HttpConnection();
-//                thread.execute();
+                Toast.makeText(getApplicationContext(), "save btn!!", Toast.LENGTH_SHORT).show();
+                if(CheckAllInputData())
+                {
+                    HttpConnection thread = new HttpConnection();
+                    thread.execute();
+                }
                 break;
             case R.id.getMemberInfo_btn:
-                Toast.makeText(getApplicationContext(), "get meminfo btn!!!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "get Allmeminfo btn!!!", Toast.LENGTH_SHORT).show();
                 new GetAllMemInfoTask().execute();
                 break;
             case R.id.delMemData_btn:
                 Toast.makeText(getApplicationContext(),"del Memdata btn!!!",Toast.LENGTH_SHORT).show();
-                DelMemDataThread delThread = new DelMemDataThread();
-                delThread.execute();
+                if(CheckInputMemId())
+                {
+                    DelMemDataThread delThread = new DelMemDataThread();
+                    delThread.execute();
+                }
+                break;
+            case R.id.getMemData_btn:
+                Toast.makeText(getApplicationContext(),"get Memdata btn!!!", Toast.LENGTH_SHORT).show();
+                if(CheckInputMemId())
+                {
+                    new GetMemDataTask().execute();
+                }
+                break;
+            case R.id.editMemdata_btn:
+                Toast.makeText(getApplicationContext(),"editMemdata btn!!",Toast.LENGTH_SHORT).show();
+                new EditMemDataTask().execute();
             default:
                 break;
         }
     }//onClick()
 
+    private String GetEditId()
+    {
+        String result;
+        result = editMemId.getText().toString();
+        return result;
+    }
+
+    private String GetEditNewId()
+    {
+        String result;
+        result = editNewMemId.getText().toString();
+        return result;
+    }
+
+    private int GetEditNewAge()
+    {
+        int result;
+        String result_string = editNewMemAge.getText().toString();
+        result = Integer.parseInt(result_string);
+        return result;
+    }
+
     private String GetInputMemID()
     {
         String result;
         result = memIdEtxt.getText().toString();
-
-        if(result.equals(""))
-            return "lllllll";
-
         return result;
+    }
+
+    private int GetInputMemAge()
+    {
+        int result;
+        String result_string= memAgeEtxt.getText().toString();
+        if(result_string.equals(""))
+            return -1;
+        result =  Integer.parseInt(result_string);
+        return result;
+    }
+
+    // 입력값 유효성체크
+    // 회원ID 입력값 유효성 체크 및 전역변수에 ID저장
+    private boolean CheckInputMemId()
+    {
+        String result_memId="";
+        result_memId = GetInputMemID();
+        if(result_memId.equals("")) {
+            Toast.makeText(getApplicationContext(),"회원ID를 입력하세요!!!",Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        MemId = result_memId;
+        return true;
+    }
+
+    private boolean CheckAllInputData()
+    {
+        int result_memAge=-1;
+
+        if(CheckInputMemId()==false)
+            return false;
+
+        result_memAge = GetInputMemAge();
+
+        if(result_memAge < 0){
+            Toast.makeText(getApplicationContext(),"회원나이를 입력하세요!!!",Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        MemAge = result_memAge;
+        return true;
     }
 
     private class HttpConnection extends AsyncTask<String, Void, String>
@@ -290,7 +375,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     urlConnection.setDoInput(true);
                     urlConnection.setDoOutput(true);
                     urlConnection.setUseCaches(true);
-                    urlConnection.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
+                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
                     //response
                     if(urlConnection.getResponseCode()==HttpURLConnection.HTTP_OK)
@@ -324,6 +409,138 @@ public class MainActivity extends Activity implements View.OnClickListener {
             super.onPostExecute(result);
             dialog.dismiss();
             temp_result_txt.setText(result);
+        }
+    }
+
+    private class GetMemDataTask extends AsyncTask<Void, Void, String>
+    {
+        ProgressDialog dialog;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog = new ProgressDialog(context);
+            dialog.show();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            URL url;
+            String serverMsg=null;
+
+            try {
+                url=new URL("http://ktk1015.dothome.co.kr/s2/getMemData.php");  //URL클래스의 인스턴스 생성
+
+                HttpURLConnection urlConnection=(HttpURLConnection)url.openConnection();
+
+                if(urlConnection !=null)
+                {
+                    /***************************************
+                     전송모드 설정
+                     ****************************************/
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setConnectTimeout(3000);
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
+                    urlConnection.setUseCaches(true);
+                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
+                    SendMemId(urlConnection);
+
+                    //response
+                    if(urlConnection.getResponseCode()==HttpURLConnection.HTTP_OK)
+                    {
+                        /***************************************
+                         서버 msg 읽기
+                         ****************************************/
+                        serverMsg = ReadServerResult(urlConnection);
+                        Log.d("tk_test", "getMemdata from server =" + serverMsg);
+                        ServerResultJsonParsing(serverMsg);
+                        ItemEntry etemp = itemList.get(0);
+                        Log.d("tk_test", "111= " + etemp.getMemId() + "222= "+etemp.getMemAge());
+                    }
+                    else
+                    {
+                        Log.d(TAG,"connection is fail");
+                    }
+
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+            return serverMsg;
+        }//doInBackground
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            dialog.dismiss();
+            temp_result_txt.setText(result);
+        }
+    }
+
+    private class EditMemDataTask extends AsyncTask<Void, Void, String>
+    {
+        ProgressDialog dialog;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog = new ProgressDialog(context);
+            dialog.show();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            URL url;
+            String serverMsg=null;
+
+            try {
+                url=new URL("http://ktk1015.dothome.co.kr/s2/editMemData.php");  //URL클래스의 인스턴스 생성
+
+                HttpURLConnection urlConnection=(HttpURLConnection)url.openConnection();
+
+                if(urlConnection !=null)
+                {
+                    /***************************************
+                     전송모드 설정
+                     ****************************************/
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setConnectTimeout(3000);
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
+                    urlConnection.setUseCaches(true);
+                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
+                    SendtoEditMemData(urlConnection);
+
+                    //response
+                    if(urlConnection.getResponseCode()==HttpURLConnection.HTTP_OK)
+                    {
+                        /***************************************
+                         서버 msg 읽기
+                         ****************************************/
+                        serverMsg = ReadServerResult(urlConnection);
+                        Log.d("tk_test", "geEditresult from server =" + serverMsg);
+                    }
+                    else
+                    {
+                        Log.d(TAG,"connection is fail");
+                    }
+
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+            return serverMsg;
+        }//doInBackground
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            dialog.dismiss();
         }
     }
 
@@ -382,6 +599,68 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
     }//SendMsgDefault()
 
+    /***************************************
+     함수명: SendMemId
+     기능: 서버로 회원ID 전송
+     ****************************************/
+    private void SendMemId(HttpURLConnection urlConnection)
+    {
+        try {
+            //전송할 데이터
+            String cMemid = "";
+            String toServerData ="";
+
+            //Todo: MemId가 null 값일 때 예외처리
+            cMemid = MemId;
+
+            //전송 String 생성
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("memid").append("=").append(cMemid);
+            toServerData = buffer.toString();
+            Log.d(TAG, "toServerData= "+toServerData);
+
+            OutputStream os = urlConnection.getOutputStream();
+            // write메소드로 메시지로 작성된 파라미터정보를 바이트단위로 "EUC-KR"로 인코딩해서 요청한다.
+            // 여기서 중요한 점은 "UTF-8"로 해도 되는데 한글일 경우는 "EUC-KR"로 인코딩해야만 한글이 제대로 전달된다.
+            os.write(toServerData.getBytes("UTF-8"));
+            os.flush(); // 스트림 버퍼 비우기
+            os.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***************************************
+     함수명: SendtoEditMemData
+     기능: 서버로 회원ID 전송
+     ****************************************/
+    private void SendtoEditMemData(HttpURLConnection urlConnection)
+    {
+        try {
+            //전송할 데이터
+            String oldMemid = GetEditId();
+            String newMemid = GetEditNewId();
+            int newAge = GetEditNewAge();
+            String toServerData ="";
+
+            //전송 String 생성
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("oldMemid").append("=").append(oldMemid).append("&");  //php변수에 값대입
+            buffer.append("newMemid").append("=").append(newMemid).append("&");
+            buffer.append("newAge").append("=").append(newAge);      //변수구분은 & 사용
+            toServerData = buffer.toString();
+            Log.d(TAG, "toServerData= "+toServerData);
+
+            OutputStream os = urlConnection.getOutputStream();
+            // write메소드로 메시지로 작성된 파라미터정보를 바이트단위로 "EUC-KR"로 인코딩해서 요청한다.
+            // 여기서 중요한 점은 "UTF-8"로 해도 되는데 한글일 경우는 "EUC-KR"로 인코딩해야만 한글이 제대로 전달된다.
+            os.write(toServerData.getBytes("UTF-8"));
+            os.flush(); // 스트림 버퍼 비우기
+            os.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
     /******************************************************************************
      함수명: ServerResultJsonParsing

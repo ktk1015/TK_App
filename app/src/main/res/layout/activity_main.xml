@@ -12,6 +12,7 @@
     <EditText
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:hint="회원ID를 입력하세요!!"
         android:id="@+id/memID_editText" />
 
     <TextView
@@ -22,6 +23,8 @@
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:hint="회원 나이를 입력하세요!!"
+        android:inputType="number"
         android:id="@+id/age_editText"/>
 
     <Button
@@ -42,16 +45,44 @@
         android:id="@+id/delMemData_btn"
         android:text="회원정보 삭제" />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/getMemData_btn"
+        android:text="입력한 회원정보 가져오기" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/result_temp_textView"
         android:text="Result!"/>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:background="#FF909090" />
 
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="수정할 회원 ID"
+        android:id="@+id/editMemid_editText"/>
 
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="수정 ID"
+        android:id="@+id/editNewId_editText"/>
 
-
-
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="수정나이"
+        android:id="@+id/editNewAge_editText"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="회원정보수정"
+        android:id="@+id/editMemdata_btn"/>
 
 </LinearLayout>
